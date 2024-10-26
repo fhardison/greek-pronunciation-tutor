@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="sakura.css"/>
+  <title>Markdown Greek reader</title>
+  <style>
+    .tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+    }
+    .tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: 0.3s;
+      color: black;
+    }
+    .tab button:hover {
+      background-color: #ddd;
+    }
+    .tab button.active {
+      background-color: #ccc;
+    }
+    .tabcontent {
+      display: none;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .word {
+      padding-right: 4px;
+    }
+    .character {
+      padding-right: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Greek pronunciation tutor</h1>
+   <p>Enter a greek text and click <pre>Generate</pre>, then click on a letter or dipthong to hear its pronunciation in the system selected in the dropdown. To change systems, select a new system in the dropdown and click the leter again.</p>
+  <label for="mySelect">Pronunciation schema:</label>
+  <select id="mySelect">
+    <option value="imp-koine">Reconstructed Koine</option>
+    <option value="eras">Erasmian</option>
+  </select>
+  <p>&nbsp;</p>
+
+<div class="tab">
+  <button class="tablinks active" onclick="openTab(this, 'Markdown')">Markdown</button>
+  <button class="tablinks" onclick="openTab(this, 'HTML')">HTML</button>
+</div>
+
+<div id="Markdown" class="tabcontent">
+  <h2>Paste your text here</h2>
+  <textarea id="markdown-input" rows="10"></textarea>
+  <br>
+  <button onclick="convertMarkdown()">GenerateL</button>
+</div>
+
+<div id="HTML" class="tabcontent">
+  <h2>Converted HTML:</h2>
+
+  <div id="html-output" lang="grc"></div>
+</div>
+    
+<script src="//cdnjs.cloudflare.com/ajax/libs/ramda/0.30.0/ramda.min.js"></script>
+<script src="howler.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+<script>
+
+var converter = new showdown.Converter();
+const schema = document.getElementById("mySelect");
+
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+const modDict = (dict1, dict2) => Object.fromEntries(Object.entries(dict1).map((x) => (x[0] in dict2) ? [x[0], dict2[x[0]]] : [x[0], x[1]]));
+
+
+BASE = {
+  "α": "alpha.ogg",
+  "β": "beta-v.ogg",
+  "γ": "gamma.ogg",
+  "δ": "delta.ogg",
+  "ε": "epsilon.ogg",
+  "ζ": "zeta.ogg",
+  "η": "e-mid.ogg",
+  "θ": "theta.ogg",
+  "ι": "iota.ogg",
+  "κ": "kappa.ogg",
+  "λ": "lambda.ogg",
+  "μ": "mu.ogg",
+  "ν": "nu.ogg",
+  "ξ": "xsi.ogg",
+  "ο": "omicron.ogg",
+  "π": "pi.ogg",
+  "ρ": "rho.ogg",
+  "σ": "sigma.ogg",
+  "ς": "sigma.ogg",
+  "τ": "tau.ogg",
+  "υ": "upsilon.ogg",
+  "φ": "phi.ogg",
+  "χ": "chi.ogg",
+  "ψ": "psi.ogg",
+  "ω": "omega.ogg",
+  "οι" : "upsilon.ogg",
+  "αι" : "ai.ogg",
+  "ει" : "iota.ogg",
+  "αυ" : "au.ogg",
+  "ευ" : "eu.ogg",
+  "ηυ": "hv.ogg",
+  "γγ": "ng.ogg",
+};
+
+IMP_KOINE = modDict(BASE, {"αι": "e-mid.ogg"});
+
+ERAS = modDict(BASE, {"ει" : "e-mid.ogg", "αι": "ai.ogg"});
+
+SOUND_MAP = {
+  "imp-koine": IMP_KOINE,
+  "eras": ERAS,
+}
+
+const mapToSound = unit => {
+  return `<span class="character" onclick="playSound('${unit}')">${unit}</span>`;
+}
+
+function removeGreekAccents(str) {
+ const accentMap = {
+    // Single accents
+    'ά': 'α', 'έ': 'ε', 'ή': 'η', 'ί': 'ι', 'ό': 'ο', 'ύ': 'υ', 'ώ': 'ω',
+    'ά': 'α', 'έ': 'ε', 'ή': 'η', 'ί': 'ι', 'ό': 'ο', 'ύ': 'υ', 'ώ': 'ω',
+    'ᾶ': 'α', 'ῆ': 'η', 'ῖ': 'ι', 'ῦ': 'υ', 'ῶ': 'ω',
+    'ὰ': 'α', 'ὲ': 'ε', 'ὴ': 'η', 'ὶ': 'ι', 'ὸ': 'ο', 'ὺ': 'υ', 'ὼ': 'ω',
+    'ΐ': 'ι', 'ΰ': 'υ',
+    'ῐ': 'ι', 'ῒ': 'ι', 'ΐ': 'ι', 'Ὶ': 'ι', 'Ί': 'ι',
+    'Ὸ': 'υ', 'Ό': 'υ', 'Ὼ': 'υ', 'ῼ': 'υ',
+
+    // Breathing marks
+    '῾': '', 'ʹ': '',
+
+    // Combined accents
+    'ἁ': 'α', 'ἑ': 'ε', 'ἠ': 'η', 'ἰ': 'ι', 'ὀ': 'ο', 'ὐ': 'υ', 'ὠ': 'ω',
+    'ᾅ': 'α', 'ᾍ': 'ε', 'ᾇ': 'η', '᾿': 'ι', 'ᾭ': 'ο', 'Ύ': 'υ', 'ᾩ': 'ω',
+    'ἂ': 'α', 'ἒ': 'ε', 'ἢ': 'η', 'ἲ': 'ι', 'ὂ': 'ο', 'ὒ': 'υ', 'ὢ': 'ω',
+    'ᾁ': 'α', 'ᾏ': 'ε', 'ᾝ': 'η', '῁': 'ι', 'ᾝ': 'ο', '῭': 'υ', 'ᾡ': 'ω',
+    'ᾲ': 'ι', 'ᾼ': 'υ',
+  };
+  return str.replace(/[^\x00-\x7F]/g, function(match) {
+    return accentMap[match] || match;
+  });
+}
+
+
+const removeAccents = (x) => c = x.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+
+function reverseDict(dict) {
+  const reversedDict = {};
+  for (const [key, value] of Object.entries(dict)) {
+    reversedDict[value] = key;
+  }
+  return reversedDict;
+}
+
+const DIPTH = [
+  ["αι", "1"],
+  ["ει", "2"],
+  ["οι", "3"],
+  ["ευ", "4"],
+  ["αυ", "5"],
+  ["ηυ", "6"],
+  ["γγ", "7"]
+]
+
+const log = (x) => {
+  console.log(x);
+  return x
+}
+
+const DIPTH_REV = Object.fromEntries(DIPTH.map((x) => [x[1], x[0]]).map(log));
+
+
+const swapWith = (DICT) => x => R.reduce((word, y) => word.replace(y[0], y[1]), x, DICT)
+
+
+const dipthToCode = swapWith(DIPTH);
+const codeToDipth = swapWith(DIPTH_REV);
+
+const splitToUnit = (word) => dipthToCode(word).split('').map((x) => (x in DIPTH_REV) ? DIPTH_REV[x] : x);
+  
+const tagItem = (item) => {
+  if (!(item == '' || item == "\n")){
+  //Create word element
+  //loop
+    const word = removeAccents(item.normalize("NFD")).normalize("NFD");
+    const units =  splitToUnit(word);
+    return `<span class="word">${units.map(mapToSound).join("")}</span>`
+  } else {
+    return item;
+  }
+}
+
+
+
+function tagText(val) {
+  const res = val.toLowerCase().replace(/\n/g, "@\n ").split("@").flatMap((x) => x.split(" "));
+  return res.map(tagItem).join('\n');
+}
+
+const TEST = "ει Οἱ τῶν ἀγώνων τῶν ἔξωθεν θεαταὶ, ὅταν τινὰ γενναῖον ἀθλητὴν καὶ στεφανίτην ποθὲν ἥκοντα μάθωσι," + "\n" + "συντρέχουσιν ἅπαντες ὥστε ἰδεῖν αὐτοῦ τὰ παλαίσματα, καὶ τὴν τέχνην καὶ τὴν ἰσχὺν ἅπασαν:"
+
+function playSound(unit) {
+  const selected_scheme = schema.value;
+  const url = SOUND_MAP[selected_scheme][unit];
+  const audio = new Howl({
+    src: [`sounds/${url}`]
+  });
+  audio.play();
+}
+
+// Example usage:
+function convertMarkdown() {
+  var markdown = document.getElementById("markdown-input").value;
+  
+  document.getElementById("html-output").innerHTML = "<div>" + tagText(markdown) + "</div>";
+  openTab('', 'HTML');
+}
+
+openTab('', 'Markdown');
+</script>
+
+</body>
+</html>
