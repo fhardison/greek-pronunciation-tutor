@@ -44,7 +44,7 @@
 </head>
 <body>
   <h1>Greek pronunciation tutor</h1>
-   <p>Enter a greek text and click <pre>Generate</pre>, then click on a letter or dipthong to hear its pronunciation in the system selected in the dropdown. To change systems, select a new system in the dropdown and click the leter again.</p>
+   <p>Enter a greek text and click <em>Generate</em>, then click on a letter or dipthong to hear its pronunciation in the system selected in the dropdown. To change systems, select a new system in the dropdown and click the leter again.</p>
   <label for="mySelect">Pronunciation schema:</label>
   <select id="mySelect">
     <option value="imp-koine">Reconstructed Koine</option>
@@ -75,7 +75,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
 <script>
 
-var converter = new showdown.Converter();
 const schema = document.getElementById("mySelect");
 
 function openTab(evt, tabName) {
