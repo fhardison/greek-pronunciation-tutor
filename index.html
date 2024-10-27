@@ -90,10 +90,12 @@ function openTab(evt, tabName) {
   document.getElementById(tabName).style.display = "block";
   evt.currentTarget.className += " active";
 }
+
+
 const modDict = (dict1, dict2) => Object.fromEntries(Object.entries(dict1).map((x) => (x[0] in dict2) ? [x[0], dict2[x[0]]] : [x[0], x[1]]));
 
 
-BASE = {
+const BASE = {
   "α": "alpha.ogg",
   "β": "beta-v.ogg",
   "γ": "gamma.ogg",
@@ -128,45 +130,49 @@ BASE = {
   "γγ": "ng.ogg",
 };
 
-IMP_KOINE = modDict(BASE, {"αι": "e-mid.ogg"});
 
-ERAS = modDict(BASE, {"ει" : "e-mid.ogg", "αι": "ai.ogg"});
 
-SOUND_MAP = {
+const IMP_KOINE = modDict(BASE, {"αι": "e-mid.ogg"});
+
+const ERAS = modDict(BASE, {"ει" : "e-mid.ogg", "αι": "ai.ogg"});
+
+const SOUND_MAP = {
   "imp-koine": IMP_KOINE,
   "eras": ERAS,
 }
+
+
+const Subscripts = Object.freeze({
+  Yes: 1,
+  No: 2
+});
+
+const SubscriptsVal = "sub-val";
+const KeepSubscripts = 1;
+
+const IMP_K_F = [];
+
+const ERAS_F = [];
+
+const SCHEME_FEATURES = {
+  "imp-koine": IMP_K_F,
+  "eras": ERAS_F
+}
+
+
 
 const mapToSound = unit => {
   return `<span class="character" onclick="playSound('${unit}')">${unit}</span>`;
 }
 
-function removeGreekAccents(str) {
- const accentMap = {
-    // Single accents
-    'ά': 'α', 'έ': 'ε', 'ή': 'η', 'ί': 'ι', 'ό': 'ο', 'ύ': 'υ', 'ώ': 'ω',
-    'ά': 'α', 'έ': 'ε', 'ή': 'η', 'ί': 'ι', 'ό': 'ο', 'ύ': 'υ', 'ώ': 'ω',
-    'ᾶ': 'α', 'ῆ': 'η', 'ῖ': 'ι', 'ῦ': 'υ', 'ῶ': 'ω',
-    'ὰ': 'α', 'ὲ': 'ε', 'ὴ': 'η', 'ὶ': 'ι', 'ὸ': 'ο', 'ὺ': 'υ', 'ὼ': 'ω',
-    'ΐ': 'ι', 'ΰ': 'υ',
-    'ῐ': 'ι', 'ῒ': 'ι', 'ΐ': 'ι', 'Ὶ': 'ι', 'Ί': 'ι',
-    'Ὸ': 'υ', 'Ό': 'υ', 'Ὼ': 'υ', 'ῼ': 'υ',
+const subscript = '\u0345'
 
-    // Breathing marks
-    '῾': '', 'ʹ': '',
+const keepSubscript = /[\u0300-\u0315\u0340-\u0344]/g
+const removeall = /[\u0300-\u0315\u0340-\u0345]/g
 
-    // Combined accents
-    'ἁ': 'α', 'ἑ': 'ε', 'ἠ': 'η', 'ἰ': 'ι', 'ὀ': 'ο', 'ὐ': 'υ', 'ὠ': 'ω',
-    'ᾅ': 'α', 'ᾍ': 'ε', 'ᾇ': 'η', '᾿': 'ι', 'ᾭ': 'ο', 'Ύ': 'υ', 'ᾩ': 'ω',
-    'ἂ': 'α', 'ἒ': 'ε', 'ἢ': 'η', 'ἲ': 'ι', 'ὂ': 'ο', 'ὒ': 'υ', 'ὢ': 'ω',
-    'ᾁ': 'α', 'ᾏ': 'ε', 'ᾝ': 'η', '῁': 'ι', 'ᾝ': 'ο', '῭': 'υ', 'ᾡ': 'ω',
-    'ᾲ': 'ι', 'ᾼ': 'υ',
-  };
-  return str.replace(/[^\x00-\x7F]/g, function(match) {
-    return accentMap[match] || match;
-  });
-}
 
+
+const removeAccents2 = (pattern, word) => word.normalize("NFD").replace(pattern, "");//.codePointAt(0).toString(16));
 
 const removeAccents = (x) => c = x.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
@@ -193,7 +199,7 @@ const log = (x) => {
   return x
 }
 
-const DIPTH_REV = Object.fromEntries(DIPTH.map((x) => [x[1], x[0]]).map(log));
+const DIPTH_REV = Object.fromEntries(DIPTH.map((x) => [x[1], x[0]]));
 
 
 const swapWith = (DICT) => x => R.reduce((word, y) => word.replace(y[0], y[1]), x, DICT)
@@ -208,7 +214,7 @@ const tagItem = (item) => {
   if (!(item == '' || item == "\n")){
   //Create word element
   //loop
-    const word = removeAccents(item.normalize("NFD")).normalize("NFD");
+    const word = removeAccents2(keepSubscript,item.normalize("NFD")).normalize("NFC");
     const units =  splitToUnit(word);
     return `<span class="word">${units.map(mapToSound).join("")}</span>`
   } else {
@@ -223,10 +229,14 @@ function tagText(val) {
   return res.map(tagItem).join('\n');
 }
 
-const TEST = "ει Οἱ τῶν ἀγώνων τῶν ἔξωθεν θεαταὶ, ὅταν τινὰ γενναῖον ἀθλητὴν καὶ στεφανίτην ποθὲν ἥκοντα μάθωσι," + "\n" + "συντρέχουσιν ἅπαντες ὥστε ἰδεῖν αὐτοῦ τὰ παλαίσματα, καὶ τὴν τέχνην καὶ τὴν ἰσχὺν ἅπασαν:"
+const TEST = "αὐτῳ ει Οἱ τῶν ἀγώνων τῶν ἔξωθεν θεαταὶ, ὅταν τινὰ γενναῖον ἀθλητὴν καὶ στεφανίτην ποθὲν ἥκοντα μάθωσι," + "\n" + "συντρέχουσιν ἅπαντες ὥστε ἰδεῖν αὐτοῦ τὰ παλαίσματα, καὶ τὴν τέχνην καὶ τὴν ἰσχὺν ἅπασαν:"
 
 function playSound(unit) {
   const selected_scheme = schema.value;
+  const scheme_features = SCHEME_FEATURES[selected_scheme];
+  if (!scheme_features.includes(KeepSubscripts)){
+    unit = unit.normalize("NFD").replace(subscript,'');
+  }
   const url = SOUND_MAP[selected_scheme][unit];
   const audio = new Howl({
     src: [`sounds/${url}`]
@@ -234,11 +244,12 @@ function playSound(unit) {
   audio.play();
 }
 
+
 // Example usage:
 function convertMarkdown() {
   var markdown = document.getElementById("markdown-input").value;
   
-  document.getElementById("html-output").innerHTML = "<div>" + tagText(markdown) + "</div>";
+  document.getElementById("html-output").innerHTML = "<div>" + tagText(TEST) + "</div>";
   openTab('', 'HTML');
 }
 
