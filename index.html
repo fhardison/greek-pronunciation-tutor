@@ -249,7 +249,7 @@ function playSound(unit) {
 function convertMarkdown() {
   var markdown = document.getElementById("markdown-input").value;
   
-  document.getElementById("html-output").innerHTML = "<div>" + tagText(TEST) + "</div>";
+  document.getElementById("html-output").innerHTML = "<div>" + tagText(markdown) + "</div>";
   openTab('', 'HTML');
 }
 
